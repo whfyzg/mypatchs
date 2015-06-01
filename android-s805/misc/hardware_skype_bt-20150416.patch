@@ -1,0 +1,29 @@
+diff --git a/audio_hal/audio_hw.c b/audio_hal/audio_hw.c
+index 647b5bd..7fee204 100755
+--- a/audio_hal/audio_hw.c
++++ b/audio_hal/audio_hw.c
+@@ -1070,7 +1070,7 @@ static ssize_t out_write(struct audio_stream_out *stream, const void* buffer,
+     exit:
+         pthread_mutex_unlock(&out->lock);
+         //fixed me: It is not a good way to clear android audioflinger buffer,but when pcm write error, audioflinger can't break out.
+-        memset(in_buffer,0,out_frames * frame_size);
++        memset(buffer, 0, bytes); 
+         if (ret != 0) {
+             usleep(bytes * 1000000 / audio_stream_frame_size(&stream->common) /
+                    out_get_sample_rate(&stream->common));
+@@ -1143,11 +1143,14 @@ static int start_input_stream(struct aml_stream_in *in)
+ 
+     ALOGV("%s(in->requested_rate=%d, in->config.rate=%d)", 
+              __FUNCTION__, in->requested_rate, in->config.rate);
+-    if (adev->in_device & AUDIO_DEVICE_IN_BLUETOOTH_SCO_HEADSET){
++    if (adev->in_device & AUDIO_DEVICE_IN_ALL_SCO){
++		memcpy(&in->config, &pcm_config_bt, sizeof(pcm_config_bt));
+         port = get_pcm_bt_port();
+     } else if(getprop_bool("sys.hdmiIn.Capture")){
++		memcpy(&in->config, &pcm_config_in, sizeof(pcm_config_in));
+         port = get_spdif_port();
+     } else {
++		memcpy(&in->config, &pcm_config_in, sizeof(pcm_config_in));
+         port = PORT_MM;
+     }
+     LOGFUNC("*%s, open card(%d) port(%d)-------", __FUNCTION__,card,port);

@@ -1,0 +1,167 @@
+From 7786c510841311462ff8357b2af70cfdb2a560ad Mon Sep 17 00:00:00 2001
+From: WangHua <whfyzg@gmail.com>
+Date: Fri, 8 May 2015 15:09:58 +0800
+Subject: [PATCH] Storage: fake 4g nand as 8g
+
+---
+ core/java/android/os/StatFs.java                   | 31 +++++++++++++++++++++-
+ .../defcontainer/DefaultContainerService.java      | 10 +++++--
+ .../android/server/wm/WindowManagerService.java    |  2 ++
+ 3 files changed, 40 insertions(+), 3 deletions(-)
+
+diff --git a/core/java/android/os/StatFs.java b/core/java/android/os/StatFs.java
+index 9e9521a..3e8c06c 100644
+--- a/core/java/android/os/StatFs.java
++++ b/core/java/android/os/StatFs.java
+@@ -26,6 +26,7 @@ import libcore.io.StructStatVfs;
+  */
+ public class StatFs {
+     private StructStatVfs mStat;
++    private int mFakeNandSize = 0;
+ 
+     /**
+      * Construct a new StatFs for looking at the stats of the filesystem at
+@@ -37,6 +38,11 @@ public class StatFs {
+      */
+     public StatFs(String path) {
+         mStat = doStat(path);
++        if (path.equals("/data") || path.equals("/sdcard")){
++            if (mStat.f_blocks < 786432 /*3GB*/){
++		mFakeNandSize = 1;
++            }   
++        }   
+     }
+ 
+     private static StructStatVfs doStat(String path) {
+@@ -54,6 +60,11 @@ public class StatFs {
+      */
+     public void restat(String path) {
+         mStat = doStat(path);
++	if (path.equals("/data") || path.equals("/sdcard")){
++	    if (mStat.f_blocks < 786432 /*3GB*/){
++		mFakeNandSize = 1;
++	    }
++	}
+     }
+ 
+     /**
+@@ -77,6 +88,8 @@ public class StatFs {
+      */
+     @Deprecated
+     public int getBlockCount() {
++	if (mFakeNandSize == 1)
++	     return (int) (mStat.f_blocks + 917504L);
+         return (int) mStat.f_blocks;
+     }
+ 
+@@ -85,6 +98,8 @@ public class StatFs {
+      * Unix {@code statvfs.f_blocks} field.
+      */
+     public long getBlockCountLong() {
++	if (mFakeNandSize == 1)
++	    return mStat.f_blocks + 917504L;
+         return mStat.f_blocks;
+     }
+ 
+@@ -93,6 +108,8 @@ public class StatFs {
+      */
+     @Deprecated
+     public int getFreeBlocks() {
++	if (mFakeNandSize == 1)
++	    return (int) (mStat.f_bfree*2);
+         return (int) mStat.f_bfree;
+     }
+ 
+@@ -103,6 +120,8 @@ public class StatFs {
+      * will want to use {@link #getAvailableBlocks()} instead.
+      */
+     public long getFreeBlocksLong() {
++	if (mFakeNandSize == 1)
++	    return mStat.f_bfree * 2;
+         return mStat.f_bfree;
+     }
+ 
+@@ -112,6 +131,8 @@ public class StatFs {
+      * will want to use {@link #getAvailableBytes()} instead.
+      */
+     public long getFreeBytes() {
++	if (mFakeNandSize == 1)
++	    return (mStat.f_bfree*2) * mStat.f_bsize;
+         return mStat.f_bfree * mStat.f_bsize;
+     }
+ 
+@@ -120,7 +141,9 @@ public class StatFs {
+      */
+     @Deprecated
+     public int getAvailableBlocks() {
+-        return (int) mStat.f_bavail;
++	if (mFakeNandSize == 1)
++            return (int) (mStat.f_bavail*2);
++	return (int) mStat.f_bavail;
+     }
+ 
+     /**
+@@ -128,6 +151,8 @@ public class StatFs {
+      * applications. This corresponds to the Unix {@code statvfs.f_bavail} field.
+      */
+     public long getAvailableBlocksLong() {
++	if (mFakeNandSize == 1)
++	    return mStat.f_bavail * 2;
+         return mStat.f_bavail;
+     }
+ 
+@@ -136,6 +161,8 @@ public class StatFs {
+      * applications.
+      */
+     public long getAvailableBytes() {
++	if (mFakeNandSize == 1)
++		return mStat.f_bavail * mStat.f_bsize * 2;
+         return mStat.f_bavail * mStat.f_bsize;
+     }
+ 
+@@ -143,6 +170,8 @@ public class StatFs {
+      * The total number of bytes supported by the file system.
+      */
+     public long getTotalBytes() {
++	if (mFakeNandSize == 1)
++		return (mStat.f_blocks + 917504L) * mStat.f_bsize;
+         return mStat.f_blocks * mStat.f_bsize;
+     }
+ }
+diff --git a/packages/DefaultContainerService/src/com/android/defcontainer/DefaultContainerService.java b/packages/DefaultContainerService/src/com/android/defcontainer/DefaultContainerService.java
+index 9b99d47..82c2ed2 100755
+--- a/packages/DefaultContainerService/src/com/android/defcontainer/DefaultContainerService.java
++++ b/packages/DefaultContainerService/src/com/android/defcontainer/DefaultContainerService.java
+@@ -248,8 +248,14 @@ public class DefaultContainerService extends IntentService {
+ 
+             try {
+                 final StructStatVfs stat = Libcore.os.statvfs(path);
+-                final long totalSize = stat.f_blocks * stat.f_bsize;
+-                final long availSize = stat.f_bavail * stat.f_bsize;
++               /* final*/ long totalSize = stat.f_blocks * stat.f_bsize;
++               /* final*/ long availSize = stat.f_bavail * stat.f_bsize;
++		if (path.equals("/data") || path.equals("/sdcard")){
++			if (totalSize < 3221225472L){
++				totalSize += 3758096384L;
++				availSize *= 2;
++			}
++		}
+                 return new long[] { totalSize, availSize };
+             } catch (ErrnoException e) {
+                 throw new IllegalStateException(e);
+diff --git a/services/java/com/android/server/wm/WindowManagerService.java b/services/java/com/android/server/wm/WindowManagerService.java
+index 5b713b5..628dc6b 100755
+--- a/services/java/com/android/server/wm/WindowManagerService.java
++++ b/services/java/com/android/server/wm/WindowManagerService.java
+@@ -3789,6 +3789,8 @@ public class WindowManagerService extends IWindowManager.Stub
+                 req = getOrientationFromAppTokensLocked();
+             }
+ 
++            req = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE;
++
+             if (req != mForcedAppOrientation) {
+                 mForcedAppOrientation = req;
+                 //send a message to Policy indicating orientation change to take
+-- 
+1.9.1
+

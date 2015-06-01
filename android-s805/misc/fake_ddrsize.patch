@@ -1,0 +1,31 @@
+diff --git a/fs/proc/Kconfig b/fs/proc/Kconfig
+index 15af622..90149d9 100644
+--- a/fs/proc/Kconfig
++++ b/fs/proc/Kconfig
+@@ -67,3 +67,8 @@ config PROC_PAGE_MONITOR
+ 	  /proc/pid/smaps, /proc/pid/clear_refs, /proc/pid/pagemap,
+ 	  /proc/kpagecount, and /proc/kpageflags. Disabling these
+           interfaces will reduce the size of the kernel by approximately 4kb.
++
++config FAKE_DDRSIZE
++	default n
++	bool "Enable fake ddr size"
++ 
+diff --git a/fs/proc/meminfo.c b/fs/proc/meminfo.c
+index 5aa847a..944603c 100644
+--- a/fs/proc/meminfo.c
++++ b/fs/proc/meminfo.c
+@@ -50,6 +50,13 @@ static int meminfo_proc_show(struct seq_file *m, void *v)
+ 	for (lru = LRU_BASE; lru < NR_LRU_LISTS; lru++)
+ 		pages[lru] = global_page_state(NR_LRU_BASE + lru);
+ 
++#ifdef CONFIG_FAKE_DDRSIZE
++        i.freeram = K(i.freeram);
++	i.freeram  *= 2;
++	i.totalram *= 2;
++	i.totalram += 100*1024;
++#endif
++
+ 	/*
+ 	 * Tagged format, for easy grepping and expansion.
+ 	 */

@@ -1,0 +1,45 @@
+diff --git a/k200/overlay/frameworks/base/core/res/res/values/config.xml b/k200/overlay/frameworks/base/core/res/res/values/config.xml
+index b19a755..0ef0485 100755
+--- a/k200/overlay/frameworks/base/core/res/res/values/config.xml
++++ b/k200/overlay/frameworks/base/core/res/res/values/config.xml
+@@ -54,14 +54,12 @@
+     <string-array translatable="false" name="networkAttributes">
+         <item>"wifi,1,1,1,-1,true"</item>
+         <item>"mobile,0,0,0,-1,true"</item>
+-<!--
+         <item>"mobile_mms,2,0,2,60000,true"</item>
+         <item>"mobile_supl,3,0,2,60000,true"</item>
+         <item>"mobile_hipri,5,0,3,60000,true"</item>
+         <item>"mobile_fota,10,0,2,60000,true"</item>
+         <item>"mobile_ims,11,0,2,60000,true"</item>
+         <item>"mobile_cbs,12,0,2,60000,true"</item>
+--->
+         <item>"wifi_p2p,13,1,0,-1,true"</item>
+         <item>"ethernet,9,9,1,-1,true"</item>
+         <item>"pppoe,15,15,1,-1,true"</item>
+
+diff --git a/k200/system.prop b/k200/system.prop
+index 400afdd..d0091c2 100755
+--- a/k200/system.prop
++++ b/k200/system.prop
+@@ -23,7 +23,7 @@ hwui.render_dirty_regions=false
+ # Configure features
+ hw.nopm=true
+ hw.nobattery=true
+-hw.nophone=true
++hw.nophone=false
+ hw.novibrate=true
+ hw.nogps=true
+ hw.cameras=0
+ 
+diff --git a/k200/BoardConfig.mk b/k200/BoardConfig.mk
+index 17bc936..210c47c 100755
+--- a/k200/BoardConfig.mk
++++ b/k200/BoardConfig.mk
+@@ -74,5 +74,5 @@ USING_ION:=true
+ BOARD_SENSOR_AMLOGIC:=true
+ BOARD_SENSOR_KIONIX_61G:=false
+ #PRODUCT_EXTRA_RECOVERY_KEYS := ../common/releasekey.x509.pem
+-
++BOARD_USE_AML_STANDARD_RIL := true
+ include device/amlogic/common/sepolicy.mk

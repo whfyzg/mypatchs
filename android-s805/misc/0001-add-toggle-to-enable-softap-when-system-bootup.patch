@@ -1,0 +1,28 @@
+From 07faca49a35ada353c64a3dc33cb8c91e56a0df7 Mon Sep 17 00:00:00 2001
+From: WangHua <whfyzg@gmail.com>
+Date: Wed, 21 Jan 2015 11:17:41 +0800
+Subject: [PATCH] add toggle to enable softap when system bootup
+
+---
+ services/java/com/android/server/wifi/WifiService.java | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/services/java/com/android/server/wifi/WifiService.java b/services/java/com/android/server/wifi/WifiService.java
+index f2efde1..3b6e15c 100755
+--- a/services/java/com/android/server/wifi/WifiService.java
++++ b/services/java/com/android/server/wifi/WifiService.java
+@@ -331,7 +331,10 @@ public final class WifiService extends IWifiManager.Stub {
+ 
+         // If we are already disabled (could be due to airplane mode), avoid changing persist
+         // state here
+-        if (wifiEnabled) setWifiEnabled(wifiEnabled);
++	if (SystemProperties.getInt("ro.raibow.solidsoftap", 0) == 1)
++	    setWifiApEnabled(null, true);
++	else
++	    if (wifiEnabled) setWifiEnabled(wifiEnabled);	
+ 
+         mWifiWatchdogStateMachine = WifiWatchdogStateMachine.
+                makeWifiWatchdogStateMachine(mContext);
+-- 
+1.9.1
+

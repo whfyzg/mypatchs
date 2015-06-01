@@ -1,0 +1,21 @@
+diff --git a/wifi/java/android/net/wifi/WifiApConfigStore.java b/wifi/java/android/net/wifi/WifiApConfigStore.java
+index 0531ca3..7f33dd4 100644
+--- a/wifi/java/android/net/wifi/WifiApConfigStore.java
++++ b/wifi/java/android/net/wifi/WifiApConfigStore.java
+@@ -202,11 +202,13 @@ class WifiApConfigStore extends StateMachine {
+        will keep the device secure after the update */
+     private void setDefaultApConfiguration() {
+         WifiConfiguration config = new WifiConfiguration();
+-        config.SSID = mContext.getString(R.string.wifi_tether_configure_ssid_default);
++	String randomUUID = UUID.randomUUID().toString();
++        config.SSID = mContext.getString(R.string.wifi_tether_configure_ssid_default) + randomUUID.substring(0, 5);
+         config.allowedKeyManagement.set(KeyMgmt.WPA2_PSK);
+-        String randomUUID = UUID.randomUUID().toString();
++	config.preSharedKey = mContext.getString(R.string.wifi_tether_configure_sharekey_default);
++//        String randomUUID = UUID.randomUUID().toString();
+         //first 12 chars from xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx
+-        config.preSharedKey = randomUUID.substring(0, 8) + randomUUID.substring(9,13);
++//        config.preSharedKey = randomUUID.substring(0, 8) + randomUUID.substring(9,13);
+         sendMessage(WifiStateMachine.CMD_SET_AP_CONFIG, config);
+     }
+ }
